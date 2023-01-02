@@ -15,7 +15,28 @@ const io = require('socket.io-client');
 const socket = io('http://127.0.0.1:8181');
 
 socket.on('connect',()=>{
-    console.log('connected');
+    //for identifying a particular machine
+    const ni = os.networkInterfaces();
+    let macA;
+    for(let key in ni){
+        if(!ni[key][0].internal){
+            macA = ni[key][0].mac;
+            break;
+        }
+    }
+    socket.emit('auth','123456');
+    performanceData().then(data=>{
+        socket.emit('initPerfData',{...data,macA})
+    }) 
+    let perfDataInterval = setInterval(()=>{
+       performanceData().then(data=>{
+           console.log(data);
+           socket.emit('perfData',data)
+       }) 
+    },1000) 
+    socket.on('diconnect',()=>{
+        clearInterval(perfDataInterval);
+    })
 })
 
 const performanceData = () => {
